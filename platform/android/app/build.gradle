@@ -1,0 +1,74 @@
+plugins { id 'com.android.application' }
+
+// The release key, read from keystore.properties (gitignored) rather than
+// written here. A missing file is not an error: a debug build still works, and
+// `assembleRelease` fails with a clear message instead of silently producing an
+// unsigned APK that no device will install.
+def keystoreProps = new Properties()
+def keystoreFile = rootProject.file('keystore.properties')
+if (keystoreFile.exists()) keystoreProps.load(new FileInputStream(keystoreFile))
+
+android {
+    namespace "io.nava.launcher"
+
+    // 36 and 37 are what this machine has installed; the SDK dir is
+    // root-owned, so the build cannot fetch a different one.
+    compileSdkVersion 36
+    ndkVersion "29.0.14206865"
+    // AGP 8.5 defaults to build-tools 34, which is not installed and cannot be
+    // fetched into a root-owned SDK dir. 36.0.0 is.
+    buildToolsVersion "36.0.0"
+
+    defaultConfig {
+        applicationId "io.nava.launcher"
+        minSdkVersion 26
+        // A launcher wants a CURRENT target: package visibility, predictive
+        // back and the gesture-nav contract are all targetSdk-gated, and a
+        // stale one makes the system treat the home screen as legacy.
+        targetSdkVersion 36
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        release {
+            if (keystoreProps['storeFile']) {
+                storeFile     file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias      keystoreProps['keyAlias']
+                keyPassword   keystoreProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig keystoreProps['storeFile'] ? signingConfigs.release : null
+        }
+    }
+
+    sourceSets {
+        // app_shell's Java half is compiled HERE — the library's own CMake does
+        // not build it, because Java is Gradle's job. Without this line every
+        // JNI lookup fails quietly and the IME never appears.
+        main.java.srcDirs += '../../../framework/App_shell/platform/android/java'
+        // The font is packaged from the repo's own assets/ rather than copied
+        // into this module: AGP merges assets before the native build runs, so
+        // a CMake POST_BUILD copy would always be one build too late.
+        main.assets.srcDirs += '../../../assets'
+    }
+
+    externalNativeBuild {
+        cmake { path "../CMakeLists.txt" }
+    }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include "arm64-v8a", "x86_64"
+            universalApk false
+        }
+    }
+}

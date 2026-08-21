@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Android 11+ hides the package list from apps that do not ask. A
+         launcher's entire job is that list, so it asks for all of it; the
+         narrower <queries> form cannot express "everything launchable". -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <!-- ACTION_DELETE opens the system's own uninstall dialog; this only makes
+         it reachable, it does not uninstall anything by itself. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
+    <application
+        android:label="navaLauncher"
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+
+        <activity
+            android:name="io.nava.launcher.LauncherActivity"
+            android:label="navaLauncher"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|density"
+            android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="false"
+            android:stateNotNeeded="true"
+            android:clearTaskOnLaunch="true">
+
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="nava_launcher" />
+
+            <!-- HOME + DEFAULT is what makes this a launcher; LAUNCHER keeps it
+                 listed among the apps so it can be opened while another home
+                 screen is the default one. -->
+            <intent-filter>
+                <action   android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

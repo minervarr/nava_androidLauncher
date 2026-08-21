@@ -1,0 +1,30 @@
+# Build outputs
+build/
+platform/android/build/
+platform/android/app/build/
+platform/android/app/.cxx/
+platform/android/.gradle/
+platform/android/captures/
+platform/android/local.properties
+
+# Native / CMake
+compile_commands.json
+.cache/
+.clangd/
+
+# Android artifacts
+*.apk
+*.aab
+
+# Signing material -- never commit
+platform/android/keystore.properties
+*.jks
+*.keystore
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+
+# Local tooling state
+.remember/
