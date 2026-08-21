@@ -1,3 +1,6 @@
 [submodule "framework/Vk_Canvas_Lb_LAW"]
 	path = framework/Vk_Canvas_Lb_LAW
 	url = https://github.com/minervarr/Vk_Canvas_Lb_LAW
+[submodule "framework/App_shell"]
+	path = framework/App_shell
+	url = https://github.com/minervarr/App_shell
