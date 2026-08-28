@@ -1,5 +1,6 @@
 # Build outputs
 build/
+build-release/
 platform/android/build/
 platform/android/app/build/
 platform/android/app/.cxx/

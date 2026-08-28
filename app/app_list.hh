@@ -16,6 +16,21 @@ struct AppEntry {
     std::string label;     // what the user sees, and the only thing searched
     std::string package;   // com.example.app
     std::string activity;  // the launcher activity's fully-qualified name
+
+    // The package, but only when another entry carries the SAME label — two
+    // identical lines are the one case a text-only launcher cannot survive.
+    // Filled in by AppList::set(); empty for the overwhelming majority.
+    // Not part of operator== below: it is derived from the list, not queried
+    // from the system, so comparing it would be comparing a conclusion.
+    std::string disambiguator;
+
+    // So a freshly queried list can be compared against the one on screen. A
+    // refresh that found nothing new must not cost a redraw or a disk write,
+    // and "nothing new" is exactly this.
+    bool operator==(const AppEntry& o) const {
+        return label == o.label && package == o.package && activity == o.activity;
+    }
+    bool operator!=(const AppEntry& o) const { return !(*this == o); }
 };
 
 class AppList {
@@ -39,9 +54,16 @@ public:
     const std::vector<AppEntry>& all() const { return entries_; }
 
 private:
-    void reapply();
+    // `narrowing` says the new query extends the old one, so only the current
+    // matches can still match and the entry list need not be walked at all.
+    void reapply(bool narrowing);
 
     std::vector<AppEntry>        entries_;
+    // entries_[i]'s label, lowercased. Parallel to entries_ and rebuilt only by
+    // set(), so a keystroke never folds a label again.
+    std::vector<std::string>     folded_;
     std::vector<const AppEntry*> matches_;
+    std::vector<const AppEntry*> scratch_;   // narrowing's candidate list
     std::string                  query_;
+    std::string                  queryFolded_;
 };

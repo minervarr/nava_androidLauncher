@@ -17,11 +17,12 @@
 //                        a lock and rings the waker, and the app collects it
 //                        from inside pump(). Never a direct call.
 //
-// Why not JNI straight into android.content.pm from C++? Because the query is
-// four chained calls, each returning a Java object that has to be released, and
-// a labels-need-the-locale sort at the end. That is a page of fragile JNI to
-// replace six readable lines of Java, and every one of the objects involved is
-// one the Java side already has to hand.
+// The QUERY is the exception to that shape, and it lives entirely in C++ (see
+// pm_bridge.cc). It used to be six readable lines of Java — whose sort called
+// loadLabel() on both sides of every comparison, so ~180 apps cost thousands of
+// resource-table lookups instead of 180. Doing it here loads each label exactly
+// once and sorts the strings we already hold, which is the difference between a
+// query that can run at startup and one that cannot.
 namespace pm {
 
 // Once, before any JNI entry point can fire — same contract as activity::.
@@ -33,11 +34,17 @@ void set_waker(void (*wake)());
 
 // ── Up-calls ────────────────────────────────────────────────────────────────
 
-// Everything with an ACTION_MAIN/CATEGORY_LAUNCHER activity, already sorted by
-// label on the Java side — it is the side that knows the user's locale.
-// Empty when the activity does not answer, which is what a consumer whose
-// Activity does not extend LauncherActivity gets.
+// Everything with an ACTION_MAIN/CATEGORY_LAUNCHER activity, sorted by label.
+// Empty when the PackageManager cannot be reached at all.
+//
+// Safe to call from a worker thread: it attaches that thread to the VM on its
+// first call. The thread MUST call detach_thread() before it exits.
 std::vector<AppEntry> query_launcher_apps();
+
+// Detaches the calling thread from the Java VM. Only for a thread that will not
+// make another JNI call — dying while still attached is a process abort, and
+// the attach is implicit inside query_launcher_apps().
+void detach_thread();
 
 // Starts the app. `activity` is the launcher activity's fully-qualified name,
 // so the component is explicit and no disambiguation dialog can appear.

@@ -5,18 +5,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 
-import java.text.Collator;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 import io.nava.appshell.AppShellActivity;
 
@@ -26,8 +19,9 @@ import io.nava.appshell.AppShellActivity;
  * installed, and start it.
  *
  * <p>Everything else the launcher needs (the IME, the clipboard, the surface,
- * the event loop) is already inherited. This class exists for four methods and
- * one broadcast receiver.
+ * the event loop) is already inherited. This class exists for three Intents and
+ * one broadcast receiver — the app QUERY is C++ (os/pm_bridge.cc), because the
+ * labels it needs are cheap to fetch and ruinous to fetch repeatedly.
  *
  * <p><strong>The static block is not optional.</strong> A NativeActivity loads
  * the .so through the manifest's {@code android.app.lib_name}, and that load
@@ -79,47 +73,10 @@ public class LauncherActivity extends AppShellActivity {
 
     // ── Up-calls from pm_bridge.cc ──────────────────────────────────────────
 
-    /**
-     * Every app with a launcher entry, as a flat array of label, package and
-     * activity triples — see pm_bridge.cc on why the shape is that and not a
-     * Parcelable.
-     *
-     * <p>Sorted HERE, with a {@link Collator}: ordering "Ábaco" against "Azul"
-     * is a locale question, and the C++ side has no locale.
-     */
-    public String[] queryLauncherApps() {
-        final PackageManager pm = getPackageManager();
-        Intent main = new Intent(Intent.ACTION_MAIN, null);
-        main.addCategory(Intent.CATEGORY_LAUNCHER);
-
-        List<ResolveInfo> found = pm.queryIntentActivities(main, 0);
-        final String self = getPackageName();
-
-        List<ResolveInfo> keep = new ArrayList<>(found.size());
-        for (ResolveInfo ri : found) {
-            // The launcher itself is not something to launch from the launcher.
-            if (!self.equals(ri.activityInfo.packageName)) keep.add(ri);
-        }
-
-        final Collator collator = Collator.getInstance();
-        collator.setStrength(Collator.PRIMARY);   // "cafe" finds "café"
-        final PackageManager fpm = pm;
-        Collections.sort(keep, new Comparator<ResolveInfo>() {
-            @Override public int compare(ResolveInfo a, ResolveInfo b) {
-                return collator.compare(a.loadLabel(fpm).toString(),
-                                        b.loadLabel(fpm).toString());
-            }
-        });
-
-        String[] out = new String[keep.size() * 3];
-        int i = 0;
-        for (ResolveInfo ri : keep) {
-            out[i++] = ri.loadLabel(pm).toString();
-            out[i++] = ri.activityInfo.packageName;
-            out[i++] = ri.activityInfo.name;
-        }
-        return out;
-    }
+    // queryLauncherApps() used to live here. It now lives in os/pm_bridge.cc,
+    // in C++: its sort compared apps by calling loadLabel() on both operands,
+    // which turned ~180 apps into thousands of resource-table lookups on the
+    // critical path of every start. The C++ version loads each label once.
 
     /**
      * An EXPLICIT component, not {@code getLaunchIntentForPackage}: a package
@@ -141,6 +98,7 @@ public class LauncherActivity extends AppShellActivity {
     }
 
     public void openAppInfo(String pkg) {
+        Log.i(TAG, "openAppInfo " + pkg);
         Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                               Uri.fromParts("package", pkg, null));
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -153,6 +111,7 @@ public class LauncherActivity extends AppShellActivity {
 
     /** The confirmation dialog is Android's. A launcher must not fake one. */
     public void requestUninstall(String pkg) {
+        Log.i(TAG, "requestUninstall " + pkg);
         Intent i = new Intent(Intent.ACTION_DELETE, Uri.fromParts("package", pkg, null));
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {

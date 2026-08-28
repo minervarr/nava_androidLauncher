@@ -50,7 +50,9 @@ configure_file(${NAVA_GENERATED_DIR}/ui_min_text_size.gen.h
 add_library(nava_launcher SHARED
     ${REPO_ROOT}/app/android_main.cc
     ${REPO_ROOT}/app/launcher_app.cc
+    ${REPO_ROOT}/app/launcher_draw.cc
     ${REPO_ROOT}/app/app_list.cc
+    ${REPO_ROOT}/app/app_cache.cc
     ${REPO_ROOT}/os/pm_bridge.cc
     ${NATIVE_APP_GLUE}/android_native_app_glue.c
     # vk_canvas's Android platform seam: AndroidSurfaceProvider and

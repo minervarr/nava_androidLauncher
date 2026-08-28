@@ -44,6 +44,8 @@ add_dependencies(app_shell generate_ui_min_text_size)
 add_executable(nava_launcher
     app/desktop_main.cc
     app/launcher_app.cc
+    app/launcher_draw.cc
+    app/app_cache.cc
     app/app_list.cc)
 add_dependencies(nava_launcher generate_ui_min_text_size)
 target_include_directories(nava_launcher PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app)
@@ -55,6 +57,24 @@ target_link_libraries(nava_launcher PRIVATE app_shell app_shell_wayland vk_canva
 nava_stage_assets(nava_launcher ${CMAKE_BINARY_DIR}/assets)
 nava_stage_font(nava_launcher ${CMAKE_BINARY_DIR}/assets)
 
+# ── Headless capture ─────────────────────────────────────────────────────────
+#
+# Dev tooling, Debug-only, as vk_canvas's own CLAUDE.md asks. Renders the
+# launcher's states with no window at all — including the ones a desktop cannot
+# produce (a keyboard inset, a long-press menu, sixty apps scrolled).
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_subdirectory(${VK_CANVAS_DIR}/core/capture ${CMAKE_BINARY_DIR}/vk_canvas_capture)
+
+    add_executable(nava_capture
+        tools/capture_main.cc
+        app/launcher_draw.cc
+        app/app_list.cc)
+    add_dependencies(nava_capture generate_ui_min_text_size)
+    target_include_directories(nava_capture PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app)
+    target_link_libraries(nava_capture PRIVATE app_shell vk_canvas_capture)
+    nava_stage_font(nava_capture ${CMAKE_BINARY_DIR}/assets)
+endif()
+
 # ── Tests ────────────────────────────────────────────────────────────────────
 #
 # Debug-only, plain assert(), no framework — app_shell's convention. It
@@ -63,4 +83,21 @@ nava_stage_font(nava_launcher ${CMAKE_BINARY_DIR}/assets)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_executable(app_list_test tests/app_list_test.cc app/app_list.cc)
     target_include_directories(app_list_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app)
+
+    # The app-list cache: the first thing read on every start, written by a
+    # process that can be killed mid-write. Same rules — it compiles the source
+    # rather than linking anything.
+    add_executable(app_cache_test tests/app_cache_test.cc app/app_cache.cc)
+    target_include_directories(app_cache_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app)
+
+    # The geometry half of launcher_draw.cc — rows, scrolling, and where the
+    # long-press menu's two words are. Links app_shell for UiMetrics and
+    # vk_canvas for the Canvas that draw_launcher() (unused here) references.
+    add_executable(launcher_geometry_test
+        tests/launcher_geometry_test.cc
+        app/launcher_draw.cc
+        app/app_list.cc)
+    add_dependencies(launcher_geometry_test generate_ui_min_text_size)
+    target_include_directories(launcher_geometry_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app)
+    target_link_libraries(launcher_geometry_test PRIVATE app_shell vk_canvas_wayland)
 endif()

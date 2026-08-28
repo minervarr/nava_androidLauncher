@@ -22,6 +22,17 @@ assets/fonts/ui.otf      the only asset that is not generated
 
 ## Building
 
+```sh
+./build.sh                       # debug desktop
+./build.sh debug all --test      # …plus the APK and the unit tests
+./build.sh release android       # the signed APK
+./build.sh --help
+```
+
+Run with no arguments at a terminal and it asks for the type and the target.
+Debug builds into `build/`, release into `build-release/`, so one never throws
+away the other's tree. What the script does by hand, and why the order matters:
+
 The desktop build must be configured FIRST, even if you only want the APK: it
 generates `ui_min_text_size.gen.h` with a tool that has to run on the build
 machine, and the Android build copies the result.
@@ -30,6 +41,7 @@ machine, and the Android build copies the result.
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -G Ninja
 cmake --build build
 ./build/app_list_test          # the filter's unit tests
+./build/launcher_geometry_test # rows, scrolling, the long-press menu's targets
 ./build/nava_launcher          # the real UI, over a fake app list
 ./build/nava_launcher ca       # …starting with the field pre-filled
 ```

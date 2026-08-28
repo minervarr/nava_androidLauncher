@@ -23,6 +23,10 @@ public:
     void openInfo(const AppEntry& e) override     { pm::open_app_info(e.package); }
     void uninstall(const AppEntry& e) override    { pm::request_uninstall(e.package); }
     bool packagesChanged() override               { return pm::take_packages_changed(); }
+
+    // query() runs on LauncherApp's refresh thread, which JNI attached on its
+    // first call. A thread that dies attached takes the process with it.
+    void onWorkerExit() override                  { pm::detach_thread(); }
 };
 
 AndroidHost* g_host = nullptr;

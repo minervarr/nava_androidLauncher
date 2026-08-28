@@ -27,6 +27,13 @@ struct AppSource {
     virtual void openInfo(const AppEntry& app) {}
     virtual void uninstall(const AppEntry& app) {}
 
+    // The refresh thread is about to exit. Android's JNI requires a thread that
+    // was attached to the VM to detach before it dies — the attach happens
+    // implicitly on the worker's first call into query() — and there is no
+    // other moment at which the platform half can be told. Does nothing
+    // anywhere else, which is why it is not called "detach".
+    virtual void onWorkerExit() {}
+
     // True at most once per change. Polled from the frame loop rather than
     // pushed, because the platform's notification arrives on another thread and
     // re-querying mid-draw is the race this avoids.
