@@ -56,7 +56,13 @@ android {
         // The font is packaged from the repo's own assets/ rather than copied
         // into this module: AGP merges assets before the native build runs, so
         // a CMake POST_BUILD copy would always be one build too late.
-        main.assets.srcDirs += '../../../assets'
+        //
+        // It is a STAGED directory, not the repo's assets/ tree. assets/fonts
+        // is the shared `fonts` submodule — 127 MiB of faces — and the launcher
+        // opens exactly one, fonts/ui.otf. Listing the tree here packaged all
+        // of them: the debug APK went from 2 MiB of font to 132 MiB. Add a face
+        // to stageLauncherAssets when the app starts opening one.
+        main.assets.srcDirs += "${buildDir}/generated/launcher_assets"
     }
 
     externalNativeBuild {
@@ -71,4 +77,20 @@ android {
             universalApk false
         }
     }
+}
+
+
+// Stage exactly the faces the app opens, so the APK carries those and not the
+// whole shared fonts submodule. AGP merges assets before the native build, so
+// this has to be a Gradle task that mergeAssets depends on — a CMake
+// POST_BUILD copy arrives one build too late (see the sourceSets comment).
+def stageLauncherAssets = tasks.register('stageLauncherAssets', Copy) {
+    into "${buildDir}/generated/launcher_assets"
+    from('../../../assets/fonts/ui') {
+        include 'ui.otf'
+        into 'fonts'
+    }
+}
+tasks.matching { it.name ==~ /merge.*Assets/ }.configureEach {
+    dependsOn stageLauncherAssets
 }

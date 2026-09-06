@@ -143,12 +143,12 @@ int main(int argc, char** argv) {
     cfg.init = [](Renderer& r) {
         static MsdfFont font;
         static FileByteReader assets;   // resolves paths from the working directory
-        if (font.generate(assets, "assets/fonts/ui.otf")) {
+        if (font.generate(assets, "assets/fonts/ui/ui.otf")) {
             r.initMsdf(font);
             g_font = &font;
         } else {
             std::fprintf(stderr,
-                "warning: assets/fonts/ui.otf not found — run this from the "
+                "warning: assets/fonts/ui/ui.otf not found — run this from the "
                 "build directory. Text will fall back to stroked outlines.\n");
         }
     };

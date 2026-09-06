@@ -28,7 +28,7 @@ add_subdirectory(${FRAMEWORK_DIR}/App_shell      ${CMAKE_BINARY_DIR}/app_shell)
 # The text-size floor is derived from the faces the APP ships — list exactly
 # the one it loads, or it can render below its own legibility floor.
 include(AppShellMinTextSize)
-app_shell_generate_min_text_size(${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/ui.otf)
+app_shell_generate_min_text_size(${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/ui/ui.otf)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(NavaAssets)

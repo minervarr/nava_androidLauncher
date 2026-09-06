@@ -4,3 +4,6 @@
 [submodule "framework/App_shell"]
 	path = framework/App_shell
 	url = https://github.com/minervarr/App_shell
+[submodule "assets/fonts"]
+	path = assets/fonts
+	url = https://github.com/minervarr/fonts
